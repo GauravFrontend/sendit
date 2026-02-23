@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            width: 250px;
+            padding: 16px;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f9fafb;
+        }
+        h2 {
+            font-size: 16px;
+            margin-top: 0;
+            color: #6366f1;
+        }
+        p {
+            font-size: 13px;
+            color: #4b5563;
+        }
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #059669;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Send It AI</h2>
+    <p>Extension is active! Select text on any webpage to see the extraction icon.</p>
+    <div class="status">
+        <div class="dot"></div>
+        <span>Connected to Ollama</span>
+    </div>
+</body>
+</html>
