@@ -212,6 +212,17 @@ function showSidePanel() {
     shadowRoot.getElementById("add-to-list-btn").onclick = addToList;
 }
 
+function normalizePhone(phone) {
+    if (!phone) return "";
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) {
+        return "+91 " + cleaned.slice(0, 5) + " " + cleaned.slice(5);
+    } else if (cleaned.length === 12 && cleaned.startsWith('91')) {
+        return "+91 " + cleaned.slice(2, 7) + " " + cleaned.slice(7);
+    }
+    return phone;
+}
+
 async function sendToAI() {
     const btn = shadowRoot.getElementById("send-to-ai-btn");
     const spinner = shadowRoot.getElementById("btn-spinner");
@@ -239,23 +250,15 @@ async function sendToAI() {
     spinner.style.display = "block";
     btn.querySelector("span").innerText = "Analyzing...";
 
-    const prompt = `Extract the following details from the text and return ONLY a JSON object.
+    const prompt = `Task: Extract Name, Email, Location, and Phone from the text.
 Rules:
-1. "name": Extract the person's name. Clean LinkedIn duplicates (e.g. "Babli SinghBabli Singh" -> "Babli Singh").
+1. "name": Person who posted or company name. Clean duplicates.
 2. "email": Find any email address (look for @ and domain).
-3. "location": City, "Remote", or "Hybrid".
-4. "phone": Phone or WhatsApp number.
+3. "location": ONLY capture if a specific City, "Remote", or "Hybrid" is EXPLICITLY mentioned. If NO location is mentioned, you MUST return an empty string "". Never guess.
+4. "phone": Mobile/WhatsApp number.
 
-Text:
-"${currentText}"
-
-JSON Format:
-{
-  "name": "string",
-  "email": "string",
-  "location": "string",
-  "phone": "string"
-}`;
+Format: Return ONLY a JSON object { "name": "", "email": "", "location": "", "phone": "" }.
+Text: "${currentText}"`;
 
     try {
         const response = await fetch("https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev/api/generate", {
@@ -274,10 +277,22 @@ JSON Format:
         const data = await response.json();
         const result = JSON.parse(data.response);
 
-        resNameInput.value = result.name || "";
-        resEmailInput.value = result.email || "";
-        resLocationInput.value = result.location || "";
-        resPhoneInput.value = result.phone || "";
+        // Helper to ensure we get a string even if AI returns an object
+        const getString = (val) => {
+            if (!val) return "";
+            if (typeof val === 'object') {
+                // If it's an object with a single key 'city' or 'location', use that
+                if (val.city) return String(val.city);
+                if (val.location) return String(val.location);
+                return JSON.stringify(val);
+            }
+            return String(val);
+        };
+
+        resNameInput.value = getString(result.name);
+        resEmailInput.value = getString(result.email);
+        resLocationInput.value = getString(result.location);
+        resPhoneInput.value = normalizePhone(getString(result.phone));
         resProfileInput.value = selectedProfileUrl || "";
 
         resultsDiv.style.display = "block";
@@ -298,7 +313,7 @@ async function addToList() {
         name: shadowRoot.getElementById("res-name-input").value,
         email: shadowRoot.getElementById("res-email-input").value,
         location: shadowRoot.getElementById("res-location-input").value,
-        phone: shadowRoot.getElementById("res-phone-input").value,
+        phone: normalizePhone(shadowRoot.getElementById("res-phone-input").value),
         profile: shadowRoot.getElementById("res-profile-input").value,
         timestamp: new Date().toISOString()
     };
