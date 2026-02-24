@@ -1,4 +1,5 @@
 let selectedText = "";
+let selectedProfileUrl = "";
 let floatingIcon = null;
 let sidePanel = null;
 let shadowRoot = null;
@@ -49,7 +50,14 @@ const CSS_STYLES = `
     background: white; font-size: 14px; color: #1f2937; cursor: pointer; margin-bottom: 10px;
     outline: none; transition: border-color 0.2s;
 }
-.send-it-select:focus { border-color: #6366f1; }
+.send-it-textarea {
+    width: 100%; height: 100px; padding: 12px; border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.03);
+    font-size: 14px; line-height: 1.5; color: #1f2937; margin-bottom: 20px;
+    resize: none; outline: none; transition: border-color 0.2s;
+    font-family: inherit; box-sizing: border-box;
+}
+.send-it-textarea:focus { border-color: #6366f1; background: white; }
 `;
 
 function init() {
@@ -77,11 +85,35 @@ function handleMouseDown(e) {
 }
 
 function handleMouseUp(e) {
+    // Check if the selection happened inside our extension UI
+    const path = e.composedPath();
+    const isInsideExtension = path.some(el => el.id === 'send-it-ai-root');
+    if (isInsideExtension) return;
+
     const selection = window.getSelection();
     const text = selection.toString().trim();
 
     if (text.length > 0) {
         selectedText = text;
+        selectedProfileUrl = ""; // Reset
+
+        // Robust link detection
+        let container = selection.anchorNode ? selection.anchorNode.parentElement : null;
+        if (container) {
+            // 1. Check if selection is inside a link
+            let link = container.closest('a[href*="/in/"]');
+            if (link) {
+                selectedProfileUrl = link.href;
+            } else {
+                // 2. Look for author link in common LinkedIn containers
+                let feedItem = container.closest('.feed-shared-update-v2, .comments-comment-item, .artdeco-card, article');
+                if (feedItem) {
+                    let authorLink = feedItem.querySelector('a[href*="/in/"]');
+                    if (authorLink) selectedProfileUrl = authorLink.href;
+                }
+            }
+        }
+
         showFloatingIcon(e.pageX, e.pageY);
     }
 }
@@ -122,13 +154,14 @@ function showSidePanel() {
             <span class="send-it-title">Send It AI</span>
             <div class="send-it-close" id="send-it-close-btn">${CLOSE_ICON_SVG}</div>
         </div>
-        <div class="send-it-label">Selected Text</div>
-        <div class="send-it-content-box">${selectedText}</div>
+        <div class="send-it-label">Text to Analyze</div>
+        <textarea class="send-it-textarea" id="send-it-input">${selectedText}</textarea>
         
         <div class="send-it-label">Model</div>
         <select class="send-it-select" id="model-select">
             <option value="qwen2.5:3b">Qwen 2.5 3B (Precise)</option>
-            <option value="gemma:2b">Gemma 2B (Fast)</option>
+            <option value="gemma2:2b">Gemma 2 2B (Fast)</option>
+            <option value="qwen2.5:7b-instruct-q4_0">Qwen 2.5 7B (Powerful)</option>
         </select>
 
         <button class="send-it-button" id="send-to-ai-btn" style="margin-top: 10px;">
@@ -149,6 +182,10 @@ function showSidePanel() {
                 <div class="send-it-label">Location</div>
                 <div class="send-it-value" id="res-location">-</div>
             </div>
+            <div class="send-it-result-item">
+                <div class="send-it-label">Profile URL</div>
+                <div class="send-it-value" id="res-profile" style="word-break: break-all; color: #6366f1; font-size: 13px;">${selectedProfileUrl || 'Not detected'}</div>
+            </div>
         </div>
     `;
 
@@ -166,28 +203,29 @@ async function sendToAI() {
     const resEmail = shadowRoot.getElementById("res-email");
     const resLocation = shadowRoot.getElementById("res-location");
     const modelSelect = shadowRoot.getElementById("model-select");
+    const textInput = shadowRoot.getElementById("send-it-input");
 
     const selectedModel = modelSelect.value;
+    const currentText = textInput.value;
+
+    if (!currentText.trim()) {
+        alert("Please select or enter some text!");
+        return;
+    }
+
     btn.disabled = true;
     spinner.style.display = "block";
     btn.querySelector("span").innerText = "Analyzing...";
 
-    // Improved prompt for better name detection
-    const prompt = `Task: Extract specific information from the provided text into a clean JSON format.
-
-Information to find:
-1. "name": Look at the VERY BEGINNING of the text. LinkedIn often repeats names (e.g., "Babli SinghBabli Singh"). Remove any duplication and return the clean name. 
-2. "email": Find the professional email address (e.g., ends in .com, .co, .in).
-3. "location": Look for city names (e.g. Mohali, London) or work arrangements. 
-   - If "Remote" is mentioned -> "Remote"
-   - If "Hybrid" or "office/home" -> "Hybrid"
-   - Else if City mentioned -> City Name
-   - Else -> ""
+    const prompt = `Task: Extract Name, Email, and Location from this text into a clean JSON format.
+1. "name": Look at the start. Clean duplicates (e.g., "John DoeJohn Doe" -> "John Doe").
+2. "email": Professional email address only.
+3. "location": City name, "Remote", or "Hybrid". If none found, use "".
 
 Text to analyze:
-"${selectedText}"
+"${currentText}"
 
-IMPORTANT: Return ONLY valid JSON with keys "name", "email", "location". Do not include any other text.`;
+IMPORTANT: Return ONLY valid JSON with keys "name", "email", "location".`;
 
     try {
         const response = await fetch("https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev/api/generate", {
@@ -201,7 +239,11 @@ IMPORTANT: Return ONLY valid JSON with keys "name", "email", "location". Do not 
             }),
         });
 
-        if (!response.ok) throw new Error("AI Request Failed");
+        if (response.status === 404) {
+            throw new Error(`Model "${selectedModel}" not found in Ollama. Check 'ollama list'`);
+        }
+
+        if (!response.ok) throw new Error(`Server Error: ${response.status}`);
 
         const data = await response.json();
         const result = JSON.parse(data.response);
@@ -211,6 +253,7 @@ IMPORTANT: Return ONLY valid JSON with keys "name", "email", "location". Do not 
         resLocation.innerText = result.location || "";
         resultsDiv.style.display = "block";
     } catch (error) {
+        console.error("Extraction Error:", error);
         resName.innerText = "Error";
         resEmail.innerText = error.message;
         resultsDiv.style.display = "block";
