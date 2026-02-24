@@ -295,6 +295,52 @@
             border-radius: 10px;
         }
 
+        /* Settings Section */
+        .settings-container {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #e2e8f0;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .settings-header span {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .key-input-group {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .key-input-group.active {
+            display: block;
+        }
+
+        .key-input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 12px;
+            box-sizing: border-box;
+            outline: none;
+            color: #334155;
+        }
+
+        .key-input:focus {
+            border-color: #6366f1;
+        }
+
         /* Responsive Height */
         html {
             height: auto;
@@ -362,8 +408,23 @@
     </div>
 
     <div class="status">
-        <div class="dot"></div>
-        <span>Ollama Connected</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="dot"></div>
+            <span>Backend Online</span>
+        </div>
+    </div>
+
+    <div class="settings-container">
+        <div class="settings-header" id="toggle-settings">
+            <span>Cloud Settings</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
+        </div>
+        <div class="key-input-group" id="settings-group">
+            <input type="password" id="groq-key-input" class="key-input" placeholder="Enter Groq API Key (gsk_...)">
+            <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">Key is stored locally in your browser.</div>
+        </div>
     </div>
 
     <script src="popup.js"></script>

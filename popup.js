@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const refreshBtn = document.getElementById('refresh-data');
     const leadsBody = document.getElementById('leads-body');
     const emptyState = document.getElementById('empty-state');
+    const groqKeyInput = document.getElementById('groq-key-input');
+    const toggleSettings = document.getElementById('toggle-settings');
+    const settingsGroup = document.getElementById('settings-group');
+    const saveGroqKeyBtn = document.getElementById('save-groq-key'); // Added selector
+    const groqKeyStatus = document.getElementById('groq-key-status'); // Added selector
 
     const API_BASE_URL = "https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev"; // Sync via ngrok for production
 
@@ -220,6 +225,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             const cleared = currentData.savedleads.filter(l => l.synced);
             await chrome.storage.local.set({ savedleads: cleared });
             updateTable();
+        }
+    };
+
+    // Load Groq Key
+    chrome.storage.local.get(['groqApiKey'], (result) => {
+        if (result.groqApiKey) {
+            groqKeyInput.value = result.groqApiKey;
+        }
+    });
+
+    // Save Groq Key
+    groqKeyInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        chrome.storage.local.set({ groqApiKey: val });
+    });
+
+    // Toggle Settings
+    toggleSettings.onclick = () => {
+        settingsGroup.classList.toggle('active');
+        const svg = toggleSettings.querySelector('svg');
+        if (settingsGroup.classList.contains('active')) {
+            svg.innerHTML = '<path d="M18 12H5"/>'; // Minus icon
+        } else {
+            svg.innerHTML = '<path d="M12 5v14M5 12h14"/>'; // Plus icon
         }
     };
 

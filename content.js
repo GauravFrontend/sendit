@@ -8,8 +8,7 @@ let shadowRoot = null;
 const SEND_IT_ICON_SVG = `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
 const CLOSE_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
 
-const _K = "Z3NrX245cTVPbTZmcmdKTEZkSnRmOTVLV0dyeWIzRllmdElaM2RwQlFJTFFrbGhFMzhnSGNIdEI=";
-const DIRECT_GROQ_KEY = atob(_K);
+
 
 const CSS_STYLES = `
 .send-it-icon {
@@ -307,14 +306,22 @@ Text to analyze:
 
         if (selectedModel.startsWith('groq:')) {
             // DIRECT CLOUD CALL (Works even if backend is offline)
+            const storage = await chrome.storage.local.get(['groqApiKey']);
+            const apiKey = storage.groqApiKey;
+
+            if (!apiKey) {
+                alert("Please set your Groq API Key in the extension popup first!");
+                return;
+            }
+
             const groqModel = selectedModel.replace('groq:', '');
-            console.log(`☁️[Send It] Calling Groq Direct: ${groqModel} `);
+            console.log(`☁️[Send It] Calling Groq Direct: ${groqModel}`);
 
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${DIRECT_GROQ_KEY} `
+                    "Authorization": `Bearer ${apiKey}`
                 },
                 body: JSON.stringify({
                     model: groqModel,
@@ -323,7 +330,7 @@ Text to analyze:
                 }),
             });
 
-            if (!response.ok) throw new Error(`Groq Direct Error: ${response.status} `);
+            if (!response.ok) throw new Error(`Groq Direct Error: ${response.status}`);
             const data = await response.json();
             result = JSON.parse(data.choices[0].message.content);
         } else {
