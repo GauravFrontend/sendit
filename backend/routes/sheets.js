@@ -83,19 +83,36 @@ router.post('/sync', async (req, res) => {
 
         console.log(`Syncing ${leads.length} leads to Sheet: ${sheetId}`);
 
-        // 1. Check/Add Headers
-        const check = await apiCall(`${sheetId}/values/A1:Z1`);
+        // 1. Check/Add Headers and Fetch Existing Emails
+        const check = await apiCall(`${sheetId}/values/A:B`); // Fetch columns A (Name) and B (Email)
+        const existingRows = check.data.values || [];
         const headers = ['Name', 'Email', 'Send Status', 'Time', 'Location', 'Profile URL', 'Phone', 'Record Lead Time'];
 
-        if (!check.data.values || check.data.values.length === 0) {
+        // If sheet is empty, add headers
+        if (existingRows.length === 0) {
             console.log('Sheet is empty. Adding header row...');
             await apiCall(`${sheetId}/values/A1?valueInputOption=RAW`, 'PUT', {
                 values: [headers]
             });
         }
 
-        // 2. Format and Append Rows
-        const rows = leads.map(l => {
+        // Extract existing emails (from column B, index 1)
+        const existingEmails = new Set(
+            existingRows.slice(1).map(row => row[1] ? row[1].toLowerCase().trim() : '')
+        );
+
+        // 2. Filter New Leads and Format Rows
+        const newLeads = leads.filter(l => {
+            const email = l.email ? l.email.toLowerCase().trim() : '';
+            return email && !existingEmails.has(email);
+        });
+
+        if (newLeads.length === 0) {
+            console.log('No new leads to sync (all duplicates).');
+            return res.json({ success: true, message: 'No new leads to sync', count: 0 });
+        }
+
+        const rows = newLeads.map(l => {
             const recordTimeStr = new Date().toLocaleString('en-GB');
             return [
                 l.name || '',
@@ -109,13 +126,13 @@ router.post('/sync', async (req, res) => {
             ];
         });
 
-        console.log('Appending rows...');
+        console.log(`Appending ${newLeads.length} new rows...`);
         await apiCall(`${sheetId}/values/A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, 'POST', {
             values: rows
         });
 
         console.log('✅ Sync Success!');
-        res.json({ success: true, message: `Successfully synced ${leads.length} leads` });
+        res.json({ success: true, message: `Successfully synced ${newLeads.length} new leads`, count: newLeads.length });
 
     } catch (error) {
         console.error('❌ Sync Error:', error.message);

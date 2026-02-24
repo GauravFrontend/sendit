@@ -19,14 +19,14 @@
                 "content.css"
             ],
             "matches": [
-                "<all_urls>"
+                "*://*.linkedin.com/*"
             ]
         }
     ],
     "content_scripts": [
         {
             "matches": [
-                "<all_urls>"
+                "*://*.linkedin.com/*"
             ],
             "js": [
                 "content.js"

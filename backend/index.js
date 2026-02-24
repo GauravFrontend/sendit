@@ -7,6 +7,7 @@ import goalRoutes from './routes/goals.js';
 import ollamaRoutes from './routes/ollama.js';
 import n8nRoutes from './routes/n8n.js';
 import sheetRoutes from './routes/sheets.js';
+import groqRoutes from './routes/groq.js';
 
 const app = express();
 app.use(cors());
@@ -25,6 +26,7 @@ app.use('/api/goals', goalRoutes);
 app.use('/api', ollamaRoutes);
 app.use('/api/n8n', n8nRoutes);
 app.use('/api/sheets', sheetRoutes);
+app.use('/api/groq', groqRoutes);
 app.get('/api/health', (req, res) => res.status(200).send('OK'));
 
 app.listen(5000, () => console.log('Server running on 5000'));

@@ -17,7 +17,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateTable();
     };
 
+    async function checkBackend() {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const response = await fetch(`${API_BASE_URL}/api/health`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            return response.ok;
+        } catch (e) {
+            return false;
+        }
+    }
+
     async function updateTable() {
+        console.log('🔌 [Send It] Checking backend connectivity...');
+        const isOnline = await checkBackend();
+
+        const statusDot = document.querySelector('.dot');
+        const statusText = document.querySelector('.status span');
+
+        if (isOnline) {
+            statusDot.style.background = '#10b981';
+            statusText.innerText = 'Backend Online';
+            syncBtn.title = 'Sync leads to Google Sheets';
+        } else {
+            statusDot.style.background = '#9ca3af';
+            statusText.innerText = 'Backend Offline (Sync Disabled)';
+            syncBtn.disabled = true;
+            syncBtn.title = 'Start your backend to enable syncing';
+        }
+
         console.log('🔌 [Send It] Fetching data from:', `${API_BASE_URL}/api/sheets/sync`);
         tableLoader.style.display = 'flex';
         table.style.display = 'none';
@@ -26,22 +55,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         let localLeads = localResult.savedleads;
         let sheetLeads = [];
 
-        try {
-            // Fetch entries from Google Sheets
-            const response = await fetch(`${API_BASE_URL}/api/sheets/sync`);
-            console.log('📡 [Send It] Fetch Status:', response.status, response.statusText);
+        if (isOnline) {
+            try {
+                // Fetch entries from Google Sheets
+                const response = await fetch(`${API_BASE_URL}/api/sheets/sync`);
+                console.log('📡 [Send It] Fetch Status:', response.status, response.statusText);
 
-            if (response.ok) {
-                const data = await response.json();
-                const allSheetLeads = data.leads || [];
-                // Take only the latest 10 leads from the sheet
-                sheetLeads = allSheetLeads.slice(-10).reverse();
-                console.log(`✅ [Send It] Received ${allSheetLeads.length} total, displaying latest ${sheetLeads.length} leads from Sheets`);
-            } else {
-                console.error('❌ [Send It] Backend returned error:', response.status);
+                if (response.ok) {
+                    const data = await response.json();
+                    const allSheetLeads = data.leads || [];
+                    // Take only the latest 10 leads from the sheet
+                    sheetLeads = allSheetLeads.slice(-10).reverse();
+                    console.log(`✅ [Send It] Received ${allSheetLeads.length} total, displaying latest ${sheetLeads.length} leads from Sheets`);
+                } else {
+                    console.error('❌ [Send It] Backend returned error:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ [Send It] Network/Fetch Error:', error);
             }
-        } catch (error) {
-            console.error('❌ [Send It] Network/Fetch Error:', error);
         }
 
         // Deduplication: If a local lead's profile exists in sheets, mark it synced or remove it
@@ -68,6 +99,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const displayLeads = [...unsyncedLocal, ...sheetLeads];
 
         tableLoader.style.display = 'none'; // Hide loader after data is processed
+
+        // Sync button logic: Only allow if there are unsynced leads AND the backend is online
+        syncBtn.disabled = !isOnline || unsyncedLocal.length === 0;
 
         if (displayLeads.length === 0) {
             table.style.display = 'none';
@@ -103,13 +137,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td>${lead.email || '-'}</td>
                 <td>${statusBadge}</td>
                 <td class="time-cell">${timeStr}</td>
-                <td><a href="${lead.profile}" target="_blank" class="profile-link">View</a></td>
                 <td class="actions">
                     ${!lead.synced ? `
                     <span class="btn-delete" data-id="${lead.id}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </span>` : ''}
                 </td>
+                <td><a href="${lead.profile}" target="_blank" class="profile-link">View</a></td>
             `;
             leadsBody.appendChild(tr);
         });

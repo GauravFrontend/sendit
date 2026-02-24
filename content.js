@@ -8,17 +8,21 @@ let shadowRoot = null;
 const SEND_IT_ICON_SVG = `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
 const CLOSE_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
 
+const _K = "Z3NrX245cTVPbTZmcmdKTEZkSnRmOTVLV0dyeWIzRllmdElaM2RwQlFJTFFrbGhFMzhnSGNIdEI=";
+const DIRECT_GROQ_KEY = atob(_K);
+
 const CSS_STYLES = `
 .send-it-icon {
-    position: absolute; z-index: 2147483647; width: 40px; height: 40px;
+    position: fixed; z-index: 2147483647; width: 40px; height: 40px;
     background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
     border-radius: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
     animation: fadeIn 0.2s ease-out;
+    pointer-events: auto;
 }
 .send-it-icon:hover { transform: scale(1.1) translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6); }
-.send-it-icon svg { width: 24px; height: 24px; fill: white; }
+.send-it-icon svg { width: 24px; height: 24px; fill: white; pointer-events: none; }
 .send-it-panel {
     position: fixed; top: 20px; right: 20px; width: 400px; max-height: 90vh;
     background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px);
@@ -44,13 +48,22 @@ const CSS_STYLES = `
 .send-it-result-item.full-width { grid-column: span 2; }
 
 .send-it-results { display: none; border-top: 1px solid rgba(0, 0, 0, 0.05); padding-top: 5px; }
+.scan-status { font-size: 10px; color: #6b7280; font-weight: normal; margin-top: 2px; }
+
+.send-it-toast {
+    position: absolute; top: 50px; left: 15px; right: 15px;
+    background: #4f46e5; color: white; padding: 8px 12px;
+    border-radius: 8px; font-size: 11px; font-weight: 500;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    display: none; z-index: 100; animation: slideDown 0.3s ease;
+}
+@keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .send-it-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
 .send-it-input-res {
     width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(0, 0, 0, 0.08);
     background: #f9fafb; font-size: 13px; outline: none; box-sizing: border-box; color: #374151;
 }
 .send-it-input-res:focus { border-color: #6366f1; background: white; }
-
 .send-it-select-mini {
     font-size: 10px; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.1);
     background: white; color: #6b7280; cursor: pointer; outline: none; margin-right: 10px;
@@ -66,6 +79,8 @@ const CSS_STYLES = `
 .loading-spinner { width: 14px; height: 14px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 `;
+
+let backendOfflineUntil = 0; // Timestamp for cool-down
 
 function init() {
     // Create a container for our shadow DOM
@@ -121,7 +136,7 @@ function handleMouseUp(e) {
             }
         }
 
-        showFloatingIcon(e.pageX, e.pageY);
+        showFloatingIcon(e.clientX, e.clientY);
     }
 }
 
@@ -131,8 +146,8 @@ function showFloatingIcon(x, y) {
     floatingIcon = document.createElement("div");
     floatingIcon.className = "send-it-icon";
     floatingIcon.innerHTML = SEND_IT_ICON_SVG;
-    floatingIcon.style.left = `${x + 5}px`;
-    floatingIcon.style.top = `${y + 5}px`;
+    floatingIcon.style.left = `${x + 10}px`;
+    floatingIcon.style.top = `${y + 10}px`;
 
     floatingIcon.onclick = (e) => {
         e.stopPropagation();
@@ -156,17 +171,29 @@ function showSidePanel() {
     sidePanel = document.createElement("div");
     sidePanel.className = "send-it-panel";
 
+    const isOfflineMode = Date.now() < backendOfflineUntil;
+
     sidePanel.innerHTML = `
         <div class="send-it-header">
             <span class="send-it-title">Send It AI</span>
             <div style="display: flex; align-items: center;">
                 <select class="send-it-select-mini" id="model-select">
-                    <option value="qwen2.5:3b">Qwen 3B</option>
-                    <option value="gemma2:2b">Gemma 2B</option>
-                    <option value="qwen2.5:7b-instruct-q4_0">Qwen 7B</option>
+                    <optgroup label="Local (Ollama)">
+                        <option value="qwen2.5:3b" ${isOfflineMode ? 'disabled' : ''}>Qwen 3B</option>
+                        <option value="gemma2:2b" ${isOfflineMode ? 'disabled' : ''}>Gemma 2B</option>
+                    </optgroup>
+                    <optgroup label="Cloud (Groq)">
+                        <option value="groq:llama-3.3-70b-versatile" ${isOfflineMode ? 'selected' : ''}>Llama 70B (Best)</option>
+                        <option value="groq:llama-3.1-8b-instant">Llama 8B (Fast)</option>
+                        <option value="groq:mixtral-8x7b-32768">Mixtral</option>
+                    </optgroup>
                 </select>
                 <div class="send-it-close" id="send-it-close-btn">${CLOSE_ICON_SVG}</div>
             </div>
+        </div >
+
+        <div class="send-it-toast" id="send-it-toast">
+            ☁️ Backend offline. Switched to Cloud.
         </div>
         
         <div class="send-it-label">Raw Text</div>
@@ -204,7 +231,7 @@ function showSidePanel() {
                 </div>
             </div>
         </div>
-    `;
+`;
 
     shadowRoot.appendChild(sidePanel);
 
@@ -251,47 +278,96 @@ async function sendToAI() {
     }, 2500);
 
     const prompt = `You are a Lead Extraction Assistant. 
-Analyze the provided text (usually a LinkedIn post) and extract contact details.
+Analyze the provided text(usually a LinkedIn post) and extract contact details.
 
 CRITICAL INSTRUCTIONS:
 1. NAME: The name of the person who posted is almost always at the VERY START of the text. 
-   - If the name is repeated (e.g. "Vinod SVinod S"), clean it to just "Vinod S".
+   - If the name is repeated(e.g. "Vinod SVinod S"), clean it to just "Vinod S".
    - Ignore suffixes like "3rd+", "1st", "Following", etc.
 2. EMAIL: Find any professional or personal email address.
 3. LOCATION: Only extract if a specific City, "Remote", or "Hybrid" is mentioned.
-4. PHONE: Extract any phone/WhatsApp numbers.
+4. PHONE: Extract any phone / WhatsApp numbers.
 
-Return ONLY a valid JSON object. Do not include any other text.
+Return ONLY a valid JSON object.Do not include any other text.
 JSON Structure:
 {
-  "name": "Full Name",
-  "email": "email@example.com",
-  "location": "City/Remote",
-  "phone": "number"
+    "name": "Full Name",
+        "email": "email@example.com",
+            "location": "City/Remote",
+                "phone": "number"
 }
 
 Text to analyze:
 "${currentText}"`;
 
     try {
-        console.log(`🧠 [Send It] Sending prompt to model: ${selectedModel}`);
-        console.log(`📝 [Send It] Prompt Length: ${prompt.length} chars`);
+        console.log(`🧠[Send It] Sending prompt to model: ${selectedModel} `);
 
-        const response = await fetch("https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev/api/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: selectedModel,
-                prompt: prompt,
-                stream: false,
-                format: "json"
-            }),
-        });
+        let result;
 
-        if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+        if (selectedModel.startsWith('groq:')) {
+            // DIRECT CLOUD CALL (Works even if backend is offline)
+            const groqModel = selectedModel.replace('groq:', '');
+            console.log(`☁️[Send It] Calling Groq Direct: ${groqModel} `);
 
-        const data = await response.json();
-        const result = JSON.parse(data.response);
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${DIRECT_GROQ_KEY} `
+                },
+                body: JSON.stringify({
+                    model: groqModel,
+                    messages: [{ role: 'user', content: prompt }],
+                    response_format: { type: "json_object" }
+                }),
+            });
+
+            if (!response.ok) throw new Error(`Groq Direct Error: ${response.status} `);
+            const data = await response.json();
+            result = JSON.parse(data.choices[0].message.content);
+        } else {
+            // LOCAL CALL (Requires backend/ngrok)
+            try {
+                const response = await fetch("https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev/api/generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: selectedModel,
+                        prompt: prompt,
+                        stream: false,
+                        format: "json"
+                    }),
+                });
+
+                if (!response.ok) throw new Error("Backend Error");
+                const data = await response.json();
+                result = JSON.parse(data.response);
+            } catch (err) {
+                const wasAlreadyOffline = Date.now() < backendOfflineUntil;
+
+                // Set/Refresh offline state for 60 minutes (1 hour)
+                backendOfflineUntil = Date.now() + (60 * 60 * 1000);
+
+                if (!wasAlreadyOffline) {
+                    console.warn("⚠️ [Send It] Local Backend Offline. Switching to Cloud Mode.");
+                    const toast = shadowRoot.getElementById("send-it-toast");
+                    if (toast) {
+                        toast.style.display = "block";
+                        setTimeout(() => { if (toast) toast.style.display = "none"; }, 4000);
+                    }
+                }
+
+                // Switch dropdown to cloud
+                if (modelSelect) {
+                    modelSelect.value = "groq:llama-3.3-70b-versatile";
+                    modelSelect.querySelectorAll('optgroup[label="Local (Ollama)"] option')
+                        .forEach(opt => opt.disabled = true);
+                }
+
+                return sendToAI(); // Retry with cloud
+            }
+        }
 
         // Helper to ensure we get a string even if AI returns an object
         const getString = (val) => {
@@ -323,18 +399,34 @@ Text to analyze:
 
 async function addToList() {
     const saveBtn = shadowRoot.getElementById("add-to-list-btn");
+    const email = shadowRoot.getElementById("res-email-input").value.trim().toLowerCase();
+
     const data = {
         id: Date.now(),
-        name: shadowRoot.getElementById("res-name-input").value,
-        email: shadowRoot.getElementById("res-email-input").value,
-        location: shadowRoot.getElementById("res-location-input").value,
-        phone: normalizePhone(shadowRoot.getElementById("res-phone-input").value),
-        profile: shadowRoot.getElementById("res-profile-input").value,
+        name: shadowRoot.getElementById("res-name-input").value.trim(),
+        email: email,
+        location: shadowRoot.getElementById("res-location-input").value.trim(),
+        phone: normalizePhone(shadowRoot.getElementById("res-phone-input").value.trim()),
+        profile: shadowRoot.getElementById("res-profile-input").value.trim(),
         timestamp: new Date().toISOString()
     };
 
     const result = await chrome.storage.local.get({ savedleads: [] });
-    const leads = result.savedleads;
+    let leads = result.savedleads;
+
+    // Check for duplicate EMAIL
+    const isDuplicate = email && leads.some(l => l.email && l.email.toLowerCase() === email);
+
+    if (isDuplicate) {
+        saveBtn.innerText = "Already in List!";
+        saveBtn.style.background = "#f59e0b"; // Orange/Amber
+        setTimeout(() => {
+            saveBtn.innerText = "Add to List";
+            saveBtn.style.background = "#10b981";
+        }, 3000);
+        return;
+    }
+
     leads.unshift(data);
     await chrome.storage.local.set({ savedleads: leads });
 
@@ -346,4 +438,8 @@ async function addToList() {
     }, 2000);
 }
 
-init();
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+} else {
+    init();
+}
