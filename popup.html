@@ -6,12 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
-            width: 450px;
+            width: 500px;
+            /* Slightly wider for better spacing */
             padding: 20px;
             font-family: 'Segoe UI', Roboto, sans-serif;
             background: #fdfdfd;
             margin: 0;
             color: #1f2937;
+            overflow-x: hidden;
         }
 
         .header {
@@ -31,9 +33,10 @@
         }
 
         .table-container {
-            max-height: 320px;
-            /* Reduced for low-res screens */
+            max-height: 350px;
             overflow-y: auto;
+            overflow-x: auto;
+            /* Changed to auto for sideways scrolling */
             border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 12px;
             background: white;
@@ -43,44 +46,87 @@
         /* Custom Scrollbar */
         .table-container::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
+            /* Added height for horizontal scrollbar */
         }
 
         .table-container::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .table-container::-webkit-scrollbar-thumb {
-            background: #e2e8f0;
+            background: #f1f1f1;
             border-radius: 10px;
         }
 
-        @media (prefers-color-scheme: dark) {
-            .table-container::-webkit-scrollbar-thumb {
-                background: #4b5563;
-            }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            /* Darker for better visibility */
+            border-radius: 10px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
 
         table {
             width: 100%;
+            min-width: 600px;
+            /* Force minimum width to trigger scroll */
             border-collapse: collapse;
             font-size: 13px;
         }
 
         th {
             background: #f9fafb;
-            padding: 12px;
+            padding: 12px 10px;
             text-align: left;
             font-weight: 600;
             color: #6b7280;
             text-transform: uppercase;
-            font-size: 11px;
+            font-size: 10px;
             border-bottom: 1px solid #f3f4f6;
         }
 
         td {
-            padding: 12px;
+            padding: 12px 10px;
             border-bottom: 1px solid #f3f4f6;
+            white-space: nowrap;
         }
+
+        /* Adjusted Column widths for scrollable view */
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 120px;
+        }
+
+        /* Name */
+        th:nth-child(2),
+        td:nth-child(2) {
+            width: 180px;
+        }
+
+        /* Email */
+        th:nth-child(3),
+        td:nth-child(3) {
+            width: 100px;
+        }
+
+        /* Status */
+        th:nth-child(4),
+        td:nth-child(4) {
+            width: 80px;
+        }
+
+        /* Time */
+        th:nth-child(5),
+        td:nth-child(5) {
+            width: 60px;
+        }
+
+        /* Profile */
+        th:nth-child(6),
+        td:nth-child(6) {
+            width: 40px;
+        }
+
+        /* Action */
 
         tr:hover {
             background: #fcfcfd;
@@ -88,6 +134,7 @@
 
         .actions {
             display: flex;
+            justify-content: center;
             gap: 8px;
         }
 
@@ -96,10 +143,16 @@
             cursor: pointer;
             padding: 4px;
             border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: opacity 0.2s;
         }
 
         .btn-delete:hover {
             background: #fee2e2;
+            opacity: 1;
         }
 
         .profile-link {
@@ -210,46 +263,15 @@
             margin-bottom: 12px;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        @keyframes spin {}
+
+        .table-container::-webkit-scrollbar-track {
+            background: transparent;
         }
 
-        /* Dark Mode Support */
-        @media (prefers-color-scheme: dark) {
-            body {
-                background: #111827;
-                color: #f3f4f6;
-            }
-
-            .table-container {
-                background: #1f2937;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            }
-
-            th {
-                background: #374151;
-                color: #9ca3af;
-                border-bottom: 1px solid #4b5563;
-            }
-
-            td {
-                border-bottom: 1px solid #374151;
-            }
-
-            tr:hover {
-                background: #374151;
-            }
-
-            .empty-state {
-                color: #6b7280;
-            }
-
-            .time-cell {
-                color: #9ca3af;
-            }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
         }
 
         /* Responsive Height */

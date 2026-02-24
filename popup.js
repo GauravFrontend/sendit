@@ -33,8 +33,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (response.ok) {
                 const data = await response.json();
-                sheetLeads = data.leads || [];
-                console.log(`✅ [Send It] Received ${sheetLeads.length} leads from Sheets`);
+                const allSheetLeads = data.leads || [];
+                // Take only the latest 10 leads from the sheet
+                sheetLeads = allSheetLeads.slice(-10).reverse();
+                console.log(`✅ [Send It] Received ${allSheetLeads.length} total, displaying latest ${sheetLeads.length} leads from Sheets`);
             } else {
                 console.error('❌ [Send It] Backend returned error:', response.status);
             }
