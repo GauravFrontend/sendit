@@ -20,55 +20,51 @@ const CSS_STYLES = `
 .send-it-icon:hover { transform: scale(1.1) translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6); }
 .send-it-icon svg { width: 24px; height: 24px; fill: white; }
 .send-it-panel {
-    position: fixed; top: 20px; right: 20px; width: 350px; max-height: 80vh;
-    background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px);
+    position: fixed; top: 20px; right: 20px; width: 400px; max-height: 90vh;
+    background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 20px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); z-index: 2147483647;
-    display: flex; flex-direction: column; padding: 24px;
+    display: flex; flex-direction: column; padding: 20px;
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1f2937;
-    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden;
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto;
 }
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 @keyframes slideIn { from { transform: translateX(100%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
-.send-it-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.send-it-title { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.send-it-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.send-it-title { font-size: 16px; font-weight: 700; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .send-it-close { cursor: pointer; padding: 5px; border-radius: 50%; transition: background 0.2s; }
 .send-it-close:hover { background: rgba(0, 0, 0, 0.05); }
-.send-it-content-box { background: rgba(0, 0, 0, 0.03); border-radius: 12px; padding: 12px; font-size: 14px; line-height: 1.5; margin-bottom: 20px; max-height: 200px; overflow-y: auto; border: 1px solid rgba(0, 0, 0, 0.05); }
-.send-it-button { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.send-it-button:hover { opacity: 0.9; }
-.send-it-button:active { transform: scale(0.98); }
-.send-it-button:disabled { background: #9ca3af; cursor: not-allowed; }
-.send-it-results { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0, 0, 0, 0.1); display: none; }
-.send-it-result-item { margin-bottom: 12px; }
-.send-it-label { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-.send-it-value { font-size: 15px; font-weight: 500; color: #111827; }
+
+.button-group { display: flex; gap: 10px; margin-top: 15px; }
+.send-it-button { flex: 1; height: 44px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; }
+.send-it-save-btn { flex: 1; height: 44px; background: #10b981; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: background 0.2s; display: none; align-items: center; justify-content: center; font-size: 13px; }
+
+.extract-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+.send-it-result-item { display: flex; flex-direction: column; }
+.send-it-result-item.full-width { grid-column: span 2; }
+
+.send-it-results { display: none; border-top: 1px solid rgba(0, 0, 0, 0.05); padding-top: 5px; }
+.send-it-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
 .send-it-input-res {
-    width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.1);
-    background: white; font-size: 14px; margin-bottom: 5px; outline: none; box-sizing: border-box;
+    width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(0, 0, 0, 0.08);
+    background: #f9fafb; font-size: 13px; outline: none; box-sizing: border-box; color: #374151;
 }
-.send-it-input-res:focus { border-color: #6366f1; }
-.send-it-save-btn {
-    background: #10b981; color: white; border: none; padding: 10px; border-radius: 10px;
-    font-weight: 600; cursor: pointer; width: 100%; margin-top: 15px; transition: opacity 0.2s;
-    display: none;
-}
-.send-it-save-btn:hover { opacity: 0.9; }
-.loading-spinner { width: 20px; height: 20px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.send-it-select {
-    width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(0, 0, 0, 0.1);
-    background: white; font-size: 14px; color: #1f2937; cursor: pointer; margin-bottom: 10px;
-    outline: none; transition: border-color 0.2s;
+.send-it-input-res:focus { border-color: #6366f1; background: white; }
+
+.send-it-select-mini {
+    font-size: 10px; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.1);
+    background: white; color: #6b7280; cursor: pointer; outline: none; margin-right: 10px;
 }
 .send-it-textarea {
-    width: 100%; height: 100px; padding: 12px; border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.03);
-    font-size: 14px; line-height: 1.5; color: #1f2937; margin-bottom: 20px;
+    width: 100%; height: 140px; padding: 12px; border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08); background: #f9fafb;
+    font-size: 13px; line-height: 1.5; color: #374151; margin-bottom: 0px;
     resize: none; outline: none; transition: border-color 0.2s;
     font-family: inherit; box-sizing: border-box;
 }
 .send-it-textarea:focus { border-color: #6366f1; background: white; }
+.loading-spinner { width: 14px; height: 14px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 `;
 
 function init() {
@@ -163,45 +159,50 @@ function showSidePanel() {
     sidePanel.innerHTML = `
         <div class="send-it-header">
             <span class="send-it-title">Send It AI</span>
-            <div class="send-it-close" id="send-it-close-btn">${CLOSE_ICON_SVG}</div>
+            <div style="display: flex; align-items: center;">
+                <select class="send-it-select-mini" id="model-select">
+                    <option value="qwen2.5:3b">Qwen 3B</option>
+                    <option value="gemma2:2b">Gemma 2B</option>
+                    <option value="qwen2.5:7b-instruct-q4_0">Qwen 7B</option>
+                </select>
+                <div class="send-it-close" id="send-it-close-btn">${CLOSE_ICON_SVG}</div>
+            </div>
         </div>
-        <div class="send-it-label">Text to Analyze</div>
+        
+        <div class="send-it-label">Raw Text</div>
         <textarea class="send-it-textarea" id="send-it-input">${selectedText}</textarea>
         
-        <div class="send-it-label">Model</div>
-        <select class="send-it-select" id="model-select">
-            <option value="qwen2.5:3b">Qwen 2.5 3B (Precise)</option>
-            <option value="gemma2:2b">Gemma 2 2B (Fast)</option>
-            <option value="qwen2.5:7b-instruct-q4_0">Qwen 2.5 7B (Powerful)</option>
-        </select>
-
-        <button class="send-it-button" id="send-to-ai-btn" style="margin-top: 10px;">
-            <span>Send to AI</span>
-            <div class="loading-spinner" id="btn-spinner" style="display: none;"></div>
-        </button>
+        <div class="button-group">
+            <button class="send-it-button" id="send-to-ai-btn">
+                <span>Send to AI</span>
+                <div class="loading-spinner" id="btn-spinner" style="display: none;"></div>
+            </button>
+            <button class="send-it-save-btn" id="add-to-list-btn">Add to List</button>
+        </div>
 
         <div class="send-it-results" id="send-it-results">
-            <div class="send-it-result-item">
-                <div class="send-it-label">Name</div>
-                <input type="text" class="send-it-input-res" id="res-name-input">
+            <div class="extract-grid">
+                <div class="send-it-result-item">
+                    <div class="send-it-label">Name</div>
+                    <input type="text" class="send-it-input-res" id="res-name-input">
+                </div>
+                <div class="send-it-result-item">
+                    <div class="send-it-label">Email</div>
+                    <input type="text" class="send-it-input-res" id="res-email-input">
+                </div>
+                <div class="send-it-result-item">
+                    <div class="send-it-label">Location</div>
+                    <input type="text" class="send-it-input-res" id="res-location-input">
+                </div>
+                <div class="send-it-result-item">
+                    <div class="send-it-label">Phone</div>
+                    <input type="text" class="send-it-input-res" id="res-phone-input">
+                </div>
+                <div class="send-it-result-item full-width">
+                    <div class="send-it-label">Profile URL</div>
+                    <input type="text" class="send-it-input-res" id="res-profile-input">
+                </div>
             </div>
-            <div class="send-it-result-item">
-                <div class="send-it-label">Email</div>
-                <input type="text" class="send-it-input-res" id="res-email-input">
-            </div>
-            <div class="send-it-result-item">
-                <div class="send-it-label">Location</div>
-                <input type="text" class="send-it-input-res" id="res-location-input">
-            </div>
-            <div class="send-it-result-item">
-                <div class="send-it-label">Phone</div>
-                <input type="text" class="send-it-input-res" id="res-phone-input">
-            </div>
-            <div class="send-it-result-item">
-                <div class="send-it-label">Profile URL</div>
-                <input type="text" class="send-it-input-res" id="res-profile-input">
-            </div>
-            <button class="send-it-save-btn" id="add-to-list-btn">Add to List</button>
         </div>
     `;
 
@@ -241,26 +242,41 @@ async function sendToAI() {
     const selectedModel = modelSelect.value;
     const currentText = textInput.value;
 
-    if (!currentText.trim()) {
-        alert("Please select or enter some text!");
-        return;
-    }
-
     btn.disabled = true;
     spinner.style.display = "block";
-    btn.querySelector("span").innerText = "Analyzing...";
+    btn.querySelector("span").innerText = "Booting...";
 
-    const prompt = `Task: Extract Name, Email, Location, and Phone from the text.
-Rules:
-1. "name": Person who posted or company name. Clean duplicates.
-2. "email": Find any email address (look for @ and domain).
-3. "location": ONLY capture if a specific City, "Remote", or "Hybrid" is EXPLICITLY mentioned. If NO location is mentioned, you MUST return an empty string "". Never guess.
-4. "phone": Mobile/WhatsApp number.
+    setTimeout(() => {
+        if (btn.disabled) btn.querySelector("span").innerText = "Extracting...";
+    }, 2500);
 
-Format: Return ONLY a JSON object { "name": "", "email": "", "location": "", "phone": "" }.
-Text: "${currentText}"`;
+    const prompt = `You are a Lead Extraction Assistant. 
+Analyze the provided text (usually a LinkedIn post) and extract contact details.
+
+CRITICAL INSTRUCTIONS:
+1. NAME: The name of the person who posted is almost always at the VERY START of the text. 
+   - If the name is repeated (e.g. "Vinod SVinod S"), clean it to just "Vinod S".
+   - Ignore suffixes like "3rd+", "1st", "Following", etc.
+2. EMAIL: Find any professional or personal email address.
+3. LOCATION: Only extract if a specific City, "Remote", or "Hybrid" is mentioned.
+4. PHONE: Extract any phone/WhatsApp numbers.
+
+Return ONLY a valid JSON object. Do not include any other text.
+JSON Structure:
+{
+  "name": "Full Name",
+  "email": "email@example.com",
+  "location": "City/Remote",
+  "phone": "number"
+}
+
+Text to analyze:
+"${currentText}"`;
 
     try {
+        console.log(`🧠 [Send It] Sending prompt to model: ${selectedModel}`);
+        console.log(`📝 [Send It] Prompt Length: ${prompt.length} chars`);
+
         const response = await fetch("https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev/api/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -281,7 +297,6 @@ Text: "${currentText}"`;
         const getString = (val) => {
             if (!val) return "";
             if (typeof val === 'object') {
-                // If it's an object with a single key 'city' or 'location', use that
                 if (val.city) return String(val.city);
                 if (val.location) return String(val.location);
                 return JSON.stringify(val);
@@ -296,7 +311,7 @@ Text: "${currentText}"`;
         resProfileInput.value = selectedProfileUrl || "";
 
         resultsDiv.style.display = "block";
-        saveBtn.style.display = "block";
+        saveBtn.style.display = "flex"; // Changed from block to flex for centered text
     } catch (error) {
         alert("Error: " + error.message);
     } finally {

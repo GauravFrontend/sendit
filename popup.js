@@ -1,13 +1,27 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const leadsBody = document.getElementById('leads-body');
-    const emptyState = document.getElementById('empty-state');
+    console.log('🚀 [Send It] Popup Opened');
+    console.log('📍 [Send It] API Backend:', "https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev");
+
     const table = document.getElementById('leads-table');
+    const tableLoader = document.getElementById('table-loader');
     const clearAllBtn = document.getElementById('clear-all');
     const syncBtn = document.getElementById('sync-sheets');
+    const refreshBtn = document.getElementById('refresh-data');
+    const leadsBody = document.getElementById('leads-body');
+    const emptyState = document.getElementById('empty-state');
 
     const API_BASE_URL = "https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev"; // Sync via ngrok for production
 
+    refreshBtn.onclick = () => {
+        console.log('🔄 [Send It] Manual data refresh triggered');
+        updateTable();
+    };
+
     async function updateTable() {
+        console.log('🔌 [Send It] Fetching data from:', `${API_BASE_URL}/api/sheets/sync`);
+        tableLoader.style.display = 'flex';
+        table.style.display = 'none';
+        emptyState.style.display = 'none';
         const localResult = await chrome.storage.local.get({ savedleads: [] });
         let localLeads = localResult.savedleads;
         let sheetLeads = [];
@@ -15,12 +29,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             // Fetch entries from Google Sheets
             const response = await fetch(`${API_BASE_URL}/api/sheets/sync`);
+            console.log('📡 [Send It] Fetch Status:', response.status, response.statusText);
+
             if (response.ok) {
                 const data = await response.json();
                 sheetLeads = data.leads || [];
+                console.log(`✅ [Send It] Received ${sheetLeads.length} leads from Sheets`);
+            } else {
+                console.error('❌ [Send It] Backend returned error:', response.status);
             }
         } catch (error) {
-            console.error('Failed to fetch sheet leads:', error);
+            console.error('❌ [Send It] Network/Fetch Error:', error);
         }
 
         // Deduplication: If a local lead's profile exists in sheets, mark it synced or remove it
@@ -45,6 +64,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Combine: Unsynced local on TOP, then all sheet leads
         const displayLeads = [...unsyncedLocal, ...sheetLeads];
+
+        tableLoader.style.display = 'none'; // Hide loader after data is processed
 
         if (displayLeads.length === 0) {
             table.style.display = 'none';

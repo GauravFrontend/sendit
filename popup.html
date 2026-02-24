@@ -31,12 +31,33 @@
         }
 
         .table-container {
-            max-height: 400px;
+            max-height: 320px;
+            /* Reduced for low-res screens */
             overflow-y: auto;
             border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 12px;
             background: white;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Custom Scrollbar */
+        .table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .table-container::-webkit-scrollbar-thumb {
+                background: #4b5563;
+            }
         }
 
         table {
@@ -167,24 +188,103 @@
             color: #6b7280;
             font-size: 11px;
         }
+
+        .loader-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #6366f1;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .spinner-main {
+            width: 28px;
+            height: 28px;
+            border: 3px solid rgba(99, 102, 241, 0.1);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #111827;
+                color: #f3f4f6;
+            }
+
+            .table-container {
+                background: #1f2937;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            }
+
+            th {
+                background: #374151;
+                color: #9ca3af;
+                border-bottom: 1px solid #4b5563;
+            }
+
+            td {
+                border-bottom: 1px solid #374151;
+            }
+
+            tr:hover {
+                background: #374151;
+            }
+
+            .empty-state {
+                color: #6b7280;
+            }
+
+            .time-cell {
+                color: #9ca3af;
+            }
+        }
+
+        /* Responsive Height */
+        html {
+            height: auto;
+        }
     </style>
 </head>
 
 <body>
     <div class="header">
         <h2>Send It Leads</h2>
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button id="refresh-data" class="sync-btn" style="background: #f3f4f6; color: #374151;"
+                title="Refresh Sheet Data">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+            </button>
             <button id="sync-sheets" class="sync-btn" title="Sync to Google Sheets">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
                 </svg>
                 Sync
             </button>
-            <button id="clear-all" class="clear-btn">Clear All</button>
+            <button id="clear-all" class="clear-btn">Clear</button>
         </div>
     </div>
 
     <div class="table-container">
+        <div id="table-loader" class="loader-container">
+            <div class="spinner-main"></div>
+            <span>Fetching Leads...</span>
+        </div>
         <table id="leads-table">
             <thead>
                 <tr>
