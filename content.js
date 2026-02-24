@@ -43,6 +43,17 @@ const CSS_STYLES = `
 .send-it-result-item { margin-bottom: 12px; }
 .send-it-label { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
 .send-it-value { font-size: 15px; font-weight: 500; color: #111827; }
+.send-it-input-res {
+    width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.1);
+    background: white; font-size: 14px; margin-bottom: 5px; outline: none; box-sizing: border-box;
+}
+.send-it-input-res:focus { border-color: #6366f1; }
+.send-it-save-btn {
+    background: #10b981; color: white; border: none; padding: 10px; border-radius: 10px;
+    font-weight: 600; cursor: pointer; width: 100%; margin-top: 15px; transition: opacity 0.2s;
+    display: none;
+}
+.send-it-save-btn:hover { opacity: 0.9; }
 .loading-spinner { width: 20px; height: 20px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .send-it-select {
@@ -172,20 +183,25 @@ function showSidePanel() {
         <div class="send-it-results" id="send-it-results">
             <div class="send-it-result-item">
                 <div class="send-it-label">Name</div>
-                <div class="send-it-value" id="res-name">-</div>
+                <input type="text" class="send-it-input-res" id="res-name-input">
             </div>
             <div class="send-it-result-item">
                 <div class="send-it-label">Email</div>
-                <div class="send-it-value" id="res-email">-</div>
+                <input type="text" class="send-it-input-res" id="res-email-input">
             </div>
             <div class="send-it-result-item">
                 <div class="send-it-label">Location</div>
-                <div class="send-it-value" id="res-location">-</div>
+                <input type="text" class="send-it-input-res" id="res-location-input">
+            </div>
+            <div class="send-it-result-item">
+                <div class="send-it-label">Phone</div>
+                <input type="text" class="send-it-input-res" id="res-phone-input">
             </div>
             <div class="send-it-result-item">
                 <div class="send-it-label">Profile URL</div>
-                <div class="send-it-value" id="res-profile" style="word-break: break-all; color: #6366f1; font-size: 13px;">${selectedProfileUrl || 'Not detected'}</div>
+                <input type="text" class="send-it-input-res" id="res-profile-input">
             </div>
+            <button class="send-it-save-btn" id="add-to-list-btn">Add to List</button>
         </div>
     `;
 
@@ -193,15 +209,21 @@ function showSidePanel() {
 
     shadowRoot.getElementById("send-it-close-btn").onclick = () => sidePanel.remove();
     shadowRoot.getElementById("send-to-ai-btn").onclick = sendToAI;
+    shadowRoot.getElementById("add-to-list-btn").onclick = addToList;
 }
 
 async function sendToAI() {
     const btn = shadowRoot.getElementById("send-to-ai-btn");
     const spinner = shadowRoot.getElementById("btn-spinner");
     const resultsDiv = shadowRoot.getElementById("send-it-results");
-    const resName = shadowRoot.getElementById("res-name");
-    const resEmail = shadowRoot.getElementById("res-email");
-    const resLocation = shadowRoot.getElementById("res-location");
+    const saveBtn = shadowRoot.getElementById("add-to-list-btn");
+
+    const resNameInput = shadowRoot.getElementById("res-name-input");
+    const resEmailInput = shadowRoot.getElementById("res-email-input");
+    const resLocationInput = shadowRoot.getElementById("res-location-input");
+    const resPhoneInput = shadowRoot.getElementById("res-phone-input");
+    const resProfileInput = shadowRoot.getElementById("res-profile-input");
+
     const modelSelect = shadowRoot.getElementById("model-select");
     const textInput = shadowRoot.getElementById("send-it-input");
 
@@ -217,15 +239,23 @@ async function sendToAI() {
     spinner.style.display = "block";
     btn.querySelector("span").innerText = "Analyzing...";
 
-    const prompt = `Task: Extract Name, Email, and Location from this text into a clean JSON format.
-1. "name": Look at the start. Clean duplicates (e.g., "John DoeJohn Doe" -> "John Doe").
-2. "email": Professional email address only.
-3. "location": City name, "Remote", or "Hybrid". If none found, use "".
+    const prompt = `Extract the following details from the text and return ONLY a JSON object.
+Rules:
+1. "name": Extract the person's name. Clean LinkedIn duplicates (e.g. "Babli SinghBabli Singh" -> "Babli Singh").
+2. "email": Find any email address (look for @ and domain).
+3. "location": City, "Remote", or "Hybrid".
+4. "phone": Phone or WhatsApp number.
 
-Text to analyze:
+Text:
 "${currentText}"
 
-IMPORTANT: Return ONLY valid JSON with keys "name", "email", "location".`;
+JSON Format:
+{
+  "name": "string",
+  "email": "string",
+  "location": "string",
+  "phone": "string"
+}`;
 
     try {
         const response = await fetch("https://unsymptomatical-nonperverted-jacinta.ngrok-free.dev/api/generate", {
@@ -239,29 +269,51 @@ IMPORTANT: Return ONLY valid JSON with keys "name", "email", "location".`;
             }),
         });
 
-        if (response.status === 404) {
-            throw new Error(`Model "${selectedModel}" not found in Ollama. Check 'ollama list'`);
-        }
-
         if (!response.ok) throw new Error(`Server Error: ${response.status}`);
 
         const data = await response.json();
         const result = JSON.parse(data.response);
 
-        resName.innerText = result.name || "Not found";
-        resEmail.innerText = result.email || "Not found";
-        resLocation.innerText = result.location || "";
+        resNameInput.value = result.name || "";
+        resEmailInput.value = result.email || "";
+        resLocationInput.value = result.location || "";
+        resPhoneInput.value = result.phone || "";
+        resProfileInput.value = selectedProfileUrl || "";
+
         resultsDiv.style.display = "block";
+        saveBtn.style.display = "block";
     } catch (error) {
-        console.error("Extraction Error:", error);
-        resName.innerText = "Error";
-        resEmail.innerText = error.message;
-        resultsDiv.style.display = "block";
+        alert("Error: " + error.message);
     } finally {
         btn.disabled = false;
         spinner.style.display = "none";
         btn.querySelector("span").innerText = "Send to AI";
     }
+}
+
+async function addToList() {
+    const saveBtn = shadowRoot.getElementById("add-to-list-btn");
+    const data = {
+        id: Date.now(),
+        name: shadowRoot.getElementById("res-name-input").value,
+        email: shadowRoot.getElementById("res-email-input").value,
+        location: shadowRoot.getElementById("res-location-input").value,
+        phone: shadowRoot.getElementById("res-phone-input").value,
+        profile: shadowRoot.getElementById("res-profile-input").value,
+        timestamp: new Date().toISOString()
+    };
+
+    const result = await chrome.storage.local.get({ savedleads: [] });
+    const leads = result.savedleads;
+    leads.unshift(data);
+    await chrome.storage.local.set({ savedleads: leads });
+
+    saveBtn.innerText = "Added! ✓";
+    saveBtn.style.background = "#059669";
+    setTimeout(() => {
+        saveBtn.innerText = "Add to List";
+        saveBtn.style.background = "#10b981";
+    }, 2000);
 }
 
 init();

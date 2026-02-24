@@ -1,43 +1,161 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
-            width: 250px;
-            padding: 16px;
-            font-family: 'Segoe UI', sans-serif;
-            background: #f9fafb;
+            width: 450px;
+            padding: 20px;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #fdfdfd;
+            margin: 0;
+            color: #1f2937;
         }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         h2 {
-            font-size: 16px;
-            margin-top: 0;
-            color: #6366f1;
+            font-size: 20px;
+            margin: 0;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        p {
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 13px;
-            color: #4b5563;
         }
+
+        th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-size: 11px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        tr:hover {
+            background: #fcfcfd;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-delete {
+            color: #ef4444;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .btn-delete:hover {
+            background: #fee2e2;
+        }
+
+        .profile-link {
+            color: #6366f1;
+            text-decoration: none;
+        }
+
+        .profile-link:hover {
+            text-decoration: underline;
+        }
+
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: #9ca3af;
+        }
+
         .status {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 12px;
-            color: #059669;
+            font-size: 11px;
+            color: #10b981;
+            margin-top: 15px;
         }
+
         .dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             background: #10b981;
             border-radius: 50%;
         }
+
+        .clear-btn {
+            font-size: 12px;
+            color: #ef4444;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+        }
     </style>
 </head>
+
 <body>
-    <h2>Send It AI</h2>
-    <p>Extension is active! Select text on any webpage to see the extraction icon.</p>
+    <div class="header">
+        <h2>Send It Leads</h2>
+        <button id="clear-all" class="clear-btn">Clear All</button>
+    </div>
+
+    <div class="table-container">
+        <table id="leads-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Profile</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="leads-body">
+                <!-- Data will be injected here -->
+            </tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display: none;">
+            No leads saved yet.
+        </div>
+    </div>
+
     <div class="status">
         <div class="dot"></div>
-        <span>Connected to Ollama</span>
+        <span>Ollama Connected</span>
     </div>
+
+    <script src="popup.js"></script>
 </body>
+
 </html>
